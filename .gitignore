@@ -1,0 +1,5 @@
+env
+__pacache__
+.env
+session.cookies
+*.db
