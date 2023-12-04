@@ -1,5 +1,5 @@
 env
-__pacache__
+__pycache__
 .env
 session.cookies
 *.db
