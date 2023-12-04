@@ -4,12 +4,15 @@ created by bulat zaripov
 """
 import pickle
 from datetime import datetime
+import os
+import logging
 
 import requests
 from bs4 import BeautifulSoup
 
 from models import Order, Contacts, Position
 import config
+from create_session import create_session
 
 
 def parse_contacts(page: BeautifulSoup) -> Contacts:
@@ -44,15 +47,15 @@ def get_order_from_row(row: BeautifulSoup) -> Order:
     splited = row.findAll("td")
     positions = create_positions_from_row(splited)
     order = Order(
-        splited[0].string.strip(),
-        datetime.strptime(splited[1].string.strip(), "%d-%m-%Y %H:%M"),
-        splited[2].string.strip(),
-        splited[3].string.strip(),
-        splited[4].string.strip(),
-        splited[5].string.strip(),
-        positions,
-        splited[9].string.strip(),
-        splited[10].string.strip(),
+        order_id=splited[0].string.strip(),
+        created=datetime.strptime(splited[1].string.strip(), "%d-%m-%Y %H:%M"),
+        author=splited[2].string.strip(),
+        lastname=splited[3].string.strip(),
+        name=splited[4].string.strip(),
+        mname=splited[5].string.strip(),
+        positions=positions,
+        delivery_type=splited[9].string.strip(),
+        comment=splited[10].string.strip(),
     )
     #  for parsing contacts
     #  url splited[11].find("a").get("href")
@@ -71,17 +74,50 @@ def create_positions_from_row(splited: list[BeautifulSoup]) -> list[Position]:
     return positions
 
 
-def main():
-    session = requests.session()
+def check_session_cookies() -> None:
+    if os.path.isfile(config.COOKIES_PATH):
+        return
+    create_session()
 
-    with open('session.cookies', 'rb') as f:
+
+def upload_session() -> requests.Session:
+    session = requests.session()
+    with open(config.COOKIES_PATH, 'rb') as f:
         session.cookies.update(pickle.load(f))
         print('session uploaded')
+    return session
 
+
+def is_old_session(session: requests.Session) -> bool:
+    parsedata = session.get(config.BASE_URL + "/zalazlist")
+    page = BeautifulSoup(parsedata.text, "html.parser")
+    content = page.find("div", {"class": "inner content"})
+    return content is not None
+
+
+def update_session():
+    return create_session()
+
+
+def main():
+    session: requests.Session
+    check_session_cookies()
+    if os.path.isfile(config.COOKIES_PATH):
+        session = upload_session()
+        logging.info("upload session")
+    else:
+        session = update_session()
+        logging.info("create new session: not exists")
+    if is_old_session(session):
+        session = update_session()
+        logging.info("create new session: old")
     parsedata = session.get(config.BASE_URL + "/zalazlist")
 
     page = BeautifulSoup(parsedata.text, "html.parser")
 
+    #  TODO last_loaded_id from database
+    #  TODO check is last
+    #  TODO upload on bitrix 24
     orders = parse_orders_list(page)
     print(orders)
 

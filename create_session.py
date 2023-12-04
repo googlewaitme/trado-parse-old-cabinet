@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import config
 
 
-def create_session():
+def create_session() -> requests.Session:
     """creates session file"""
     session = requests.session()
 
@@ -31,6 +31,7 @@ def create_session():
     with open('session.cookies', 'wb') as f:
         pickle.dump(session.cookies, f)
         print('session created')
+    return session
 
 
 if __name__ == "__main__":

@@ -17,3 +17,5 @@ SITE_AUTH_PASSWORD = env("site_auth_password")
 SITE_AUTH_OP = env("site_auth_op")
 
 B24_API_TOKEN = env("bitrix_24_api_url")
+
+COOKIES_PATH = "session.cookies"
