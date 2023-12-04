@@ -116,8 +116,19 @@ def main():
     page = BeautifulSoup(parsedata.text, "html.parser")
 
     #  TODO last_loaded_id from database
+    '''
+    db = DBConnector(
+        config.DB_HOST, config.DB_NAME, config.DB_USER, config.DB_PASSWORD
+    )
+    db.save("some_value", "some_result2")
+    print(db.get("some_value"))
+    '''
     #  TODO check is last
     #  TODO upload on bitrix 24
+    '''
+    order_factory = OrderFactory(config.B24_API_TOKEN)
+    order_factory.create_order(order)
+    '''
     orders = parse_orders_list(page)
     print(orders)
 
