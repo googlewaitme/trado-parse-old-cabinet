@@ -71,12 +71,3 @@ class DBConnector:
             value TEXT NOT NULL
         )""")
         self.conn.commit()
-
-
-if __name__ == "__main__":
-    import config
-    db = DBConnector(
-        config.DB_HOST, config.DB_NAME, config.DB_USER, config.DB_PASSWORD
-    )
-    db.save("some_value", "some_result2")
-    print(db.get("some_value"))

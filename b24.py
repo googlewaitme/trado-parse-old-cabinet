@@ -1,12 +1,8 @@
 '''
 export orders from old site to bitrix24
 '''
-import datetime
-
 from bitrix24 import Bitrix24
-from models import Position, Order
-
-import config
+from models import Order
 
 
 class OrderFactory:
@@ -65,27 +61,3 @@ class OrderFactory:
             "crm.productrow.fields"
         )
         return data
-
-
-if __name__ == "__main__":
-    order = Order(
-        order_id='3153',
-        created=datetime.datetime(2023, 11, 23, 16, 1),
-        author='001-000000',
-        name='Ivanov',
-        lastname='Ivan',
-        mname='Ivanovich',
-        positions=[
-            Position(name='ВА 02 МЕНКОР', count='1'),
-            Position(name='ВА 16 РЕСПИБЛИСС СИРОП', count='1'),
-            Position(name='ВА 22 ЛИВОБЛИСС', count='1'),
-            Position(name='ВА 23 РЕСПИБЛИСС', count='1'),
-            Position(name='ВА 38 ЭНЕРГОБЛИСС', count='1'),
-            Position(name='ВА 47 ИММУНОБЛИСС', count='1'),
-            Position(name='ВА 49 УРИГАРД', count='1')
-        ],
-        delivery_type='Доставка до пункта выдачи СДЭК',
-        comment=''
-    )
-    order_factory = OrderFactory(config.B24_API_TOKEN)
-    order_factory.create_order(order)
