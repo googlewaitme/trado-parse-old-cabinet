@@ -5,6 +5,7 @@ from typing import Optional
 
 @dataclass
 class Contacts:
+    url: Optional[str] = "my.tradoclub.ru"
     delivery_address: Optional[str] = "empty address"
     phone: Optional[str] = "88001112233"
     email: Optional[str] = "empty@tradoclub.ru"
@@ -15,6 +16,7 @@ class Position:
     name: str = "tovar"
     count: int = 1
     id_bitrix: Optional[int] = None
+    price: Optional[int] = None
 
 
 @dataclass

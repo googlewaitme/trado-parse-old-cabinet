@@ -17,13 +17,15 @@ from db import DBConnector
 from b24 import OrderFactory
 
 
-def parse_contacts(page: BeautifulSoup) -> Contacts:
-    delivery_address = parse_field(
+def parse_contacts(session: requests.Session, order: Order) -> Contacts:
+    parse_data = session.get(order.contacts.url)
+    page = BeautifulSoup(parse_data.text, "html.parser")
+
+    order.contacts.delivery_address = parse_field(
         page, "edit-field-zakaz-delivery-address-0-value"
     )
-    phone = parse_field(page, "edit-field-zakaz-phone-0-value")
-    email = parse_field(page, "edit-field-zakaz-email-0-email")
-    return Contacts(delivery_address, phone, email)
+    order.contacts.phone = parse_field(page, "edit-field-zakaz-phone-0-value")
+    order.contacts.email = parse_field(page, "edit-field-zakaz-email-0-email")
 
 
 def parse_field(page: BeautifulSoup, tag_id: str) -> str:
@@ -49,7 +51,7 @@ def get_order_from_row(row: BeautifulSoup) -> Order:
     splited = row.findAll("td")
     positions = create_positions_from_row(splited)
     order = Order(
-        order_id=splited[0].string.strip(),
+        order_id=int(splited[0].string.strip()),
         created=datetime.strptime(splited[1].string.strip(), "%d-%m-%Y %H:%M"),
         author=splited[2].string.strip(),
         lastname=splited[3].string.strip(),
@@ -58,9 +60,10 @@ def get_order_from_row(row: BeautifulSoup) -> Order:
         positions=positions,
         delivery_type=splited[9].string.strip(),
         comment=splited[10].string.strip(),
+        contacts=Contacts(
+            url=config.BASE_URL+splited[11].find("a").get("href")
+        )
     )
-    #  for parsing contacts
-    #  url splited[11].find("a").get("href")
     return order
 
 
@@ -86,7 +89,6 @@ def upload_session() -> requests.Session:
     session = requests.session()
     with open(config.COOKIES_PATH, 'rb') as f:
         session.cookies.update(pickle.load(f))
-        print('session uploaded')
     return session
 
 
@@ -94,11 +96,21 @@ def is_old_session(session: requests.Session) -> bool:
     parsedata = session.get(config.BASE_URL + "/zalazlist")
     page = BeautifulSoup(parsedata.text, "html.parser")
     content = page.find("div", {"class": "inner content"})
-    return content is not None
+    return content is None
 
 
 def update_session():
     return create_session()
+
+
+def upload_orders(session, db, last_uploaded_id, orders):
+    order_factory = OrderFactory(config.B24_API_TOKEN)
+    for order in orders:
+        parse_contacts(session, order)
+        order_factory.create_order(order)
+        last_uploaded_id = max(last_uploaded_id, order.order_id)
+        logging.info(f"last uploaded id {last_uploaded_id}")
+        db.save("LAST_UPLOADED_ID", str(last_uploaded_id))
 
 
 def main():
@@ -123,20 +135,17 @@ def main():
     last_uploaded_id = 1
     if db.is_exists("LAST_UPLOADED_ID"):
         last_uploaded_id = int(db.get("LAST_UPLOADED_ID"))
-    else:
-        db.save("LAST_UPLOADED_ID", str(last_uploaded_id))
 
     orders = parse_orders_list(page)
-    # TODO filter orderds which ID > last_uploaded_id
-    print(orders)
-    for order in orders:
-        # TODO add contacts here
-        parse_data = session.get(config.BASE_URL + "/node/24452709/edit")
-        page = BeautifulSoup(parse_data.text, "html.parser")
-        print(parse_contacts(page))
-        order_factory = OrderFactory(config.B24_API_TOKEN)
-        order_factory.create_order(order)
+    orders.sort(key=lambda x: x.order_id)
+    filtered_orders = [
+        order for order in orders if order.order_id > last_uploaded_id
+    ]
+    logging.info(f"geeted LAST_UPLOADED_ID {last_uploaded_id}")
+    logging.info("orders: " + str([el.order_id for el in filtered_orders]))
+    upload_orders(session, db, last_uploaded_id, filtered_orders)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()
