@@ -95,7 +95,7 @@ def parse_all_orders(session, count_pages=18) -> list[Order]:
 
 
 def parse_orders_by_session(session) -> list[Order]:
-    return parse_orders_by_url(config.BASE_URL + "/zalazlist")
+    return parse_orders_by_url(session, config.BASE_URL + "/zalazlist")
 
 
 def parse_orders_by_url(session, url) -> list[Order]:
@@ -131,7 +131,7 @@ def get_order_from_row(row: BeautifulSoup) -> Order:
         delivery_type=splited[9].string.strip(),
         comment=splited[10].string.strip(),
         contacts=Contacts(
-            url=config.BASE_URL+splited[11].find("a").get("href")
+            url=config.BASE_URL + splited[11].find("a").get("href")
         )
     )
     return order
