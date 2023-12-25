@@ -2,3 +2,5 @@ bs4
 requests
 psycopg2
 bitrix24-rest
+environs
+levenshtein

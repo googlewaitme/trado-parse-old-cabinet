@@ -10,6 +10,33 @@ from bitrix24 import Bitrix24
 from models import Order
 
 
+def create_link_between_name_and_catalog(order, product_list):
+    """
+    product_list = list[dict["TO_SEARCH", "NAME", "ID", "PRICE"]]
+    keys: "TO_SEARCH" = prepare_string("NAME")
+    "NAME" - from catalog
+    "ID" - catalog bitrix_id
+    "PRICE" - catalog price
+    """
+    for position in order.positions:
+        min_dist = len(position.name) * 2
+        to_search_name = prepare_string(position.name)
+        for product in product_list:
+            current_dist = Levenshtein.distance(
+                to_search_name, product['TO_SEARCH']
+            )
+            if current_dist < min_dist:
+                min_dist = current_dist
+                position.name = product["NAME"]
+                position.id_bitrix = product["ID"]
+                position.price = product["PRICE"]
+
+
+def prepare_string(st):
+    "prepare string for Levenshtein algorithm"
+    return "".join(sorted(st.lower().split()))
+
+
 class OrderFactory:
     def __init__(self, webhook_url: str):
         self.bx24 = Bitrix24(webhook_url)
@@ -18,7 +45,7 @@ class OrderFactory:
     def set_product_list(self) -> None:
         self.product_list = self.bx24.callMethod('crm.product.list')
         for el in self.product_list:
-            el["TO_SEARCH"] = self._prepare_string(el["NAME"])
+            el["TO_SEARCH"] = prepare_string(el["NAME"])
 
     def create_order(self, getted_order: Order):
         self.order = getted_order
@@ -121,22 +148,8 @@ class OrderFactory:
             rows=products
         )
 
-    def _prepare_string(self, st):
-        return "".join(sorted(st.lower().split()))
-
     def _create_link_between_name_and_catalog(self):
-        for position in self.order.positions:
-            min_dist = len(position.name) * 2
-            to_search_name = self._prepare_string(position.name)
-            for product in self.product_list:
-                current_dist = Levenshtein.distance(
-                    to_search_name, product['TO_SEARCH']
-                )
-                if current_dist < min_dist:
-                    min_dist = current_dist
-                    position.name = product["NAME"]
-                    position.id_bitrix = product["ID"]
-                    position.price = product["PRICE"]
+        create_link_between_name_and_catalog(self.order, self.product_list)
 
     def get_product_fields(self) -> list[dict]:
         data = self.bx24.callMethod("crm.productrow.fields")
