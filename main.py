@@ -23,6 +23,10 @@ def upload_orders(session, db, last_uploaded_id, orders):
         db.save("LAST_UPLOADED_ID", str(last_uploaded_id))
 
 
+def get_deal_fields():
+    print(OrderFactory(config.B24_API_TOKEN).get_deal_fields())
+
+
 def main():
     session = auth()
 
@@ -46,3 +50,4 @@ def main():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     main()
+    # get_deal_fields()

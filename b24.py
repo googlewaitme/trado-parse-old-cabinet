@@ -59,14 +59,18 @@ class OrderFactory:
                 "OPENED": "Y",
                 "CURRENCY_ID": "RUB",
                 "BEGINDATE": self.order.created.strftime("%Y-%m-%d %H:%M:%S"),
-                "COMMENTS": self.comment
+                "COMMENTS": self.comment,
+                "UF_CRM_1706778766269": self.technical_comment,
+                "UF_CRM_1706782366394": self.order.contacts.delivery_address,
+                "UF_CRM_1706782377221": self.order.delivery_type
             }
         )
         self._add_contacts()
         self._add_positions()
 
     def _set_comment(self):
-        self.comment = str(self.order)
+        self.comment = self.order.comment
+        self.technical_comment = str(self.order)
 
     def _add_contacts(self):
         if not self._contacts_is_exists():
